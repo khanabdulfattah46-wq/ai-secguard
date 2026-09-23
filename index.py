@@ -1,8 +1,6 @@
-# api/index.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import time
 
 app = FastAPI()
 
@@ -38,9 +36,10 @@ class VerifyRequest(BaseModel):
     identifier: str
     otp: str
 
+# API ROOT
 @app.get("/api")
 def read_root():
-    return {"message": "AI-SecGuard API Online"}
+    return {"message": "AI-SecGuard API Online (Vercel Serverless)"}
 
 @app.post("/api/auth/login")
 def login_user(data: LoginRequest):
@@ -66,8 +65,9 @@ def scan_web_vulnerabilities(data: ScanRequest):
     return {
         "status": "success", "target": data.target_url, "mode": "Deep Scan" if data.deep_scan else "Quick Scan",
         "vulnerabilities": [
-            {"type": "SQL Injection (SQLi)", "severity": "High", "endpoint": "/login.php?id=1", "desc": "Database syntax error revealed."},
-            {"type": "Cross-Site Scripting (XSS)", "severity": "Medium", "endpoint": "/search?q=", "desc": "Reflected XSS found."},
+            {"type": "SQL Injection (SQLi)", "severity": "High", "endpoint": "/login.php?id=1", "desc": "Database syntax error revealed on payload \"' OR 1=1 --\""},
+            {"type": "Cross-Site Scripting (XSS)", "severity": "Medium", "endpoint": "/search?q=", "desc": "Reflected XSS found. Payload executed in browser."},
+            {"type": "Missing Security Headers", "severity": "Low", "endpoint": "Global", "desc": "Strict-Transport-Security (HSTS) is missing."}
         ]
     }
 
@@ -76,7 +76,7 @@ def scan_ai_model(data: ScanRequest):
     if not data.token: return {"status": "error", "message": "Unauthorized. Please Login First."}
     return {
         "status": "success", "target": data.target_url,
-        "vulnerabilities": [{"type": "Jailbreak Bypass", "severity": "Critical", "desc": "AI ignored safety filters."}]
+        "vulnerabilities": [{"type": "Jailbreak Bypass", "severity": "Critical", "desc": "AI ignored safety filters when given roleplay developer prompt."}]
     }
 
 @app.post("/api/scan-text")
@@ -85,11 +85,11 @@ def scan_text(data: TextScanRequest):
     is_threat = False
     reasons = []
 
-    scam_keywords = ["urgent", "password", "bank", "verify", "click here", "lottery", "suspended", "bit.ly"]
+    scam_keywords = ["urgent", "password", "bank", "verify", "click here", "lottery", "suspended", "bit.ly", "free money"]
     for word in scam_keywords:
         if word in text:
             is_threat = True
-            reasons.append(f"Suspicious pattern found: '{word}'")
+            reasons.append(f"Suspicious keyword/pattern found: '{word}'")
 
     if is_threat: return {"status": "danger", "risk": "High Risk", "message": "Phishing or Scam Detected!", "reasons": reasons}
     return {"status": "safe", "risk": "Low Risk", "message": "Text appears clean.", "reasons": ["No scam patterns found."]}
