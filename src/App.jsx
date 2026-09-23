@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import jsPDF from 'jspdf'; // FIX: Brackets hata diye hain
+import jsPDF from 'jspdf';
 import { Shield, Terminal, Database, Smartphone, Globe, MonitorDown, Lock, User, LogOut, Loader2, ArrowRight, AlertTriangle, ShieldCheck, Search, KeyRound, UserPlus, Download } from 'lucide-react';
 
 export default function App() {
@@ -31,7 +31,7 @@ export default function App() {
     setResults(null);
   };
 
-  // --- PDF REPORT DOWNLOAD FUNCTION (FIXED) ---
+  // --- PDF REPORT DOWNLOAD FUNCTION ---
   const handleDownloadReport = () => {
     if (!results) return;
 
@@ -55,7 +55,6 @@ export default function App() {
       doc.text(`Scan Type: ${deepScan ? 'Deep Scan Analysis' : 'Quick Scan'}`, 20, yPos);
       yPos += 8;
       
-      // FIX: Font 'helvetica' define karna zaroori hai
       doc.setFont("helvetica", "bold");
       doc.text(`Overall Status: ${(results.status || 'Unknown').toUpperCase()}`, 20, yPos);
       doc.setFont("helvetica", "normal");
@@ -128,7 +127,7 @@ export default function App() {
     }
   };
 
-  // --- Auth Functions ---
+  // --- Auth Functions (UPDATED FOR VERCEL) ---
   const handleSendOTP = async () => {
     if (!authIdentifier) return alert("Email or Phone is required!");
     if (authMode === 'signup' && (!firstName || !lastName)) return alert("Please enter your First and Last name!");
@@ -141,7 +140,7 @@ export default function App() {
       : { identifier: authIdentifier };
 
     try {
-      const res = await fetch(`http://localhost:8000/api/auth/${endpoint}`, {
+      const res = await fetch(`/api/auth/${endpoint}`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
       });
       const data = await res.json();
@@ -157,7 +156,7 @@ export default function App() {
     if (!otp) return;
     setAuthLoading(true); setAuthMessage('');
     try {
-      const res = await fetch("http://localhost:8000/api/auth/verify", {
+      const res = await fetch("/api/auth/verify", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ identifier: authIdentifier, otp })
       });
       const data = await res.json();
@@ -179,13 +178,13 @@ export default function App() {
     setAuthIdentifier(''); setFirstName(''); setLastName(''); setOtp('');
   };
 
-  // --- Tool Functions ---
+  // --- Tool Functions (UPDATED FOR VERCEL) ---
   const handleApiCall = async (endpoint, payload) => {
     if (!inputData) return alert("Please enter data first!");
     setIsScanning(true); setResults(null);
     try {
       if (isAuthenticated) payload.token = "premium_user_token_8899";
-      const response = await fetch(`http://localhost:8000/api/${endpoint}`, {
+      const response = await fetch(`/api/${endpoint}`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
       });
       const data = await response.json();
@@ -373,6 +372,7 @@ export default function App() {
           </button>
         </div>
 
+        {/* Scan Results and Report Button */}
         {results && !results.error && (
           <div className="mt-8 bg-black border border-gray-800 rounded-xl p-6 font-mono relative group">
             
