@@ -1,18 +1,16 @@
 import React, { useState } from 'react';
 import jsPDF from 'jspdf';
-import { Shield, Terminal, Database, Smartphone, Globe, MonitorDown, Lock, User, LogOut, Loader2, ArrowRight, AlertTriangle, ShieldCheck, Search, KeyRound, UserPlus, Download } from 'lucide-react';
+import { Shield, Terminal, Database, Smartphone, Globe, MonitorDown, Lock, User, LogOut, Loader2, AlertTriangle, ShieldCheck, Search, KeyRound, UserPlus, Download } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('pwned');
   const [deepScan, setDeepScan] = useState(false);
   
-  // Auth States
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
   const [authMode, setAuthMode] = useState('login'); 
   const [authStep, setAuthStep] = useState('input'); 
   
-  // Form Fields
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [authIdentifier, setAuthIdentifier] = useState('');
@@ -21,7 +19,6 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authMessage, setAuthMessage] = useState('');
 
-  // Tool States
   const [inputData, setInputData] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [results, setResults] = useState(null);
@@ -31,23 +28,20 @@ export default function App() {
     setResults(null);
   };
 
-  // --- PDF REPORT DOWNLOAD FUNCTION ---
   const handleDownloadReport = () => {
-    if (!results) return;
+    if (!results || results.error) return;
 
     try {
       const doc = new jsPDF();
       let yPos = 20;
 
-      // Report Title
       doc.setFontSize(22);
-      doc.setTextColor(37, 99, 235); // Blue color
+      doc.setTextColor(37, 99, 235);
       doc.text("AI-SECGUARD SECURITY REPORT", 20, yPos);
       yPos += 15;
 
-      // Meta Info
       doc.setFontSize(12);
-      doc.setTextColor(0, 0, 0); // Black color
+      doc.setTextColor(0, 0, 0);
       doc.text(`Date: ${new Date().toLocaleString()}`, 20, yPos);
       yPos += 8;
       doc.text(`Target Scanned: ${results.target || inputData || 'N/A'}`, 20, yPos);
@@ -60,10 +54,8 @@ export default function App() {
       doc.setFont("helvetica", "normal");
       yPos += 15;
 
-      // Divider Line
       doc.line(20, yPos - 5, 190, yPos - 5);
 
-      // Results Logic
       if (results.vulnerabilities) {
         doc.text(`Total Vulnerabilities Found: ${results.vulnerabilities.length}`, 20, yPos);
         yPos += 12;
@@ -111,7 +103,6 @@ export default function App() {
         }
       }
 
-      // Footer
       if (yPos > 270) { doc.addPage(); yPos = 20; }
       doc.line(20, yPos, 190, yPos);
       yPos += 10;
@@ -119,15 +110,13 @@ export default function App() {
       doc.setTextColor(100, 100, 100);
       doc.text("Generated automatically by AI-SecGuard Professional Suite.", 20, yPos);
 
-      // PDF Download
       doc.save(`AI-SecGuard_Report_${Date.now()}.pdf`);
     } catch (error) {
       console.error("PDF Error:", error);
-      alert("PDF bananay mein koi masla aa gaya hai!");
+      alert("PDF Error: Failed to generate document.");
     }
   };
 
-  // --- Auth Functions (UPDATED FOR VERCEL) ---
   const handleSendOTP = async () => {
     if (!authIdentifier) return alert("Email or Phone is required!");
     if (authMode === 'signup' && (!firstName || !lastName)) return alert("Please enter your First and Last name!");
@@ -143,11 +132,12 @@ export default function App() {
       const res = await fetch(`/api/auth/${endpoint}`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
       });
+      if (!res.ok) throw new Error("Server Error");
       const data = await res.json();
       setAuthMessage(data.message);
       setAuthStep('otp');
     } catch (e) {
-      setAuthMessage("Server connection error.");
+      setAuthMessage("Backend API Server is offline or updating on Vercel.");
     }
     setAuthLoading(false);
   };
@@ -159,6 +149,7 @@ export default function App() {
       const res = await fetch("/api/auth/verify", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ identifier: authIdentifier, otp })
       });
+      if (!res.ok) throw new Error("Server Error");
       const data = await res.json();
       if (data.status === 'success') {
         setIsAuthenticated(true);
@@ -168,7 +159,7 @@ export default function App() {
         setAuthMessage(data.message);
       }
     } catch (e) {
-      setAuthMessage("Server connection error.");
+      setAuthMessage("Backend API Server is offline or updating on Vercel.");
     }
     setAuthLoading(false);
   };
@@ -178,7 +169,6 @@ export default function App() {
     setAuthIdentifier(''); setFirstName(''); setLastName(''); setOtp('');
   };
 
-  // --- Tool Functions (UPDATED FOR VERCEL) ---
   const handleApiCall = async (endpoint, payload) => {
     if (!inputData) return alert("Please enter data first!");
     setIsScanning(true); setResults(null);
@@ -187,9 +177,16 @@ export default function App() {
       const response = await fetch(`/api/${endpoint}`, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
       });
+      
+      if (!response.ok) {
+        throw new Error("Vercel Backend is still initializing or Requirements are missing.");
+      }
+      
       const data = await response.json();
       setResults(data);
-    } catch (error) { setResults({ error: "Backend server connection failed!" }); }
+    } catch (error) { 
+      setResults({ error: "Backend API Server connection failed! Please ensure Vercel finished updating." }); 
+    }
     setIsScanning(false);
   };
 
@@ -311,7 +308,7 @@ export default function App() {
             <button onClick={() => setAuthStep('input')} className="w-full mt-4 text-gray-500 hover:text-white text-sm font-semibold">Change Email/Phone</button>
           </>
         )}
-        {authMessage && <p className={`mt-4 text-center text-sm p-3 rounded-lg border ${authMessage.includes('error') || authMessage.includes('Invalid') ? 'bg-red-900/20 text-red-400 border-red-900/50' : 'bg-blue-900/20 text-blue-400 border-blue-900/50'}`}>{authMessage}</p>}
+        {authMessage && <p className={`mt-4 text-center text-sm p-3 rounded-lg border ${authMessage.includes('error') || authMessage.includes('Invalid') || authMessage.includes('offline') ? 'bg-red-900/20 text-red-400 border-red-900/50' : 'bg-blue-900/20 text-blue-400 border-blue-900/50'}`}>{authMessage}</p>}
       </div>
     </div>
   );
@@ -372,11 +369,19 @@ export default function App() {
           </button>
         </div>
 
-        {/* Scan Results and Report Button */}
+        {/* --- ERROR MESSAGE UI (NEW) --- */}
+        {results && results.error && (
+          <div className="mt-8 bg-red-950/20 border border-red-500/50 rounded-xl p-6 text-center animate-in fade-in">
+            <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-xl font-bold text-red-500 mb-2">Connection Error</h3>
+            <p className="text-gray-300">{results.error}</p>
+          </div>
+        )}
+
+        {/* --- SUCCESS RESULTS UI --- */}
         {results && !results.error && (
-          <div className="mt-8 bg-black border border-gray-800 rounded-xl p-6 font-mono relative group">
+          <div className="mt-8 bg-black border border-gray-800 rounded-xl p-6 font-mono relative group animate-in fade-in">
             
-            {/* Download PDF Button */}
             <button 
               onClick={handleDownloadReport} 
               className="absolute top-4 right-4 bg-gray-800 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-all opacity-80 group-hover:opacity-100 z-10"
